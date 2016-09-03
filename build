@@ -1,0 +1,2 @@
+ocamlbuild -package lwt -package cohttp -package cohttp.lwt \
+-package mysql -package yojson -package sha -package str $*
