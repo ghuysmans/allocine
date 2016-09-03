@@ -14,15 +14,14 @@ let allocine service_method parameters =
     let sed = (
         let t = localtime (time ()) in
         Printf.sprintf "%d%02d%02d" (t.tm_year+1900) (t.tm_mon+1) t.tm_mday) in
-    let signed = (
+    let signed =
         let converted = List.map (fun (a,b) -> (a, [b])) parameters in
-        ("sed", [sed]) :: ("partner", [partner_key]) :: converted) in
-    let signature = (
-        let t = Sha1.string (private_key ^ Uri.encoded_of_query signed) in
-        B64.encode (Sha1.to_bin t)) in
-    let params = List.append signed [("sig", [signature])] in
-    (* TODO optimize parameter passing (useless conversions...) *)
-    let uri = api_url ^ service_method ^ "?" ^ (Uri.encoded_of_query params) in
+        let enc = Uri.encoded_of_query in
+        enc (("sed", [sed]) :: ("partner", [partner_key]) :: converted) in
+    let signature =
+        (private_key ^ signed) |> Sha1.string |> Sha1.to_bin |> B64.encode in
+    let uri =
+        api_url ^ service_method ^ "?" ^ signed ^ "&sig=" ^ signature in
     let header = Header.init_with "User-Agent" user_agent in
     Client.call ~headers:header `GET (Uri.of_string uri) >>= fun (resp, body) ->
     let status = Response.status resp in
