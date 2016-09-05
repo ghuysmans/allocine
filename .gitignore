@@ -3,3 +3,5 @@ mysql_config.ml
 *.json
 *.byte
 _build
+*.swp
+cache

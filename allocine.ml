@@ -29,6 +29,8 @@ let allocine service_method parameters =
     | `OK -> body |> Cohttp_lwt_body.to_string
     | _ -> raise (HttpError (Code.code_of_status status))
 
+let allocine = cache allocine
+
 
 let activity_of_code = function
 | 8001 -> Actor
