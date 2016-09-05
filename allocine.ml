@@ -64,6 +64,16 @@ let movie_or_series_from_search v =
     title = v |> Util.member "title" |> Util.to_string_option;
     ms_code = v |> Util.member "code" |> Util.to_int;
     productionYear = v |> Util.member "productionYear" |> Util.to_int_option;
+    releaseDate = (
+        v |> Util.member "release" |>
+        function
+        | `Null -> (
+            v |> Util.member "yearStart" |>
+            function
+            | `Null -> None
+            | _ as x -> Some {day = 0; month = 0; year = Util.to_int x})
+        | _ as x ->
+            Some (x |> Util.member "releaseDate" |> Util.to_string |> to_date));
     directors = cs |> Util.member "directors" |> Util.to_string_option |> split;
     mainActors = cs |> Util.member "actors" |> Util.to_string_option |> split;
     poster = (

@@ -19,16 +19,51 @@ type person = {
     picture: string option;
 }
 
+type date = {
+    day: int;
+    month: int;
+    year: int;
+}
+
+(* TODO exception Invalid_date *)
+let to_date s = {
+    day = String.sub s 8 2 |> int_of_string;
+    month = String.sub s 5 2 |> int_of_string;
+    year = String.sub s 0 4 |> int_of_string;
+}
+
+let string_of_date d =
+    Printf.sprintf "%d-%02d-%02d" d.year d.month d.day
+
+let string_of_date_o = function
+| None -> "<none>"
+| Some x -> string_of_date x
+
 type movie_or_series = {
     originalTitle: string;
     title: string option;
     ms_code: int;
     productionYear: int option;
+    releaseDate: date option;
     directors: string list;
     mainActors: string list;
     poster: string option;
     userRating: float option;
 }
+
+let date_of_movie_or_series x =
+    match x.productionYear with
+    | None -> x.releaseDate
+    | Some p ->
+        match x.releaseDate with
+        | None -> Some {day=0; month=0; year=p}
+        | Some r ->
+            if r.year <= p+2 then
+                (* seems to be valid *)
+                x.releaseDate
+            else
+                (* better approximation *)
+                Some {day=0; month=0; year=p}
 
 type search_result =
 | Person of person
@@ -39,7 +74,10 @@ let print_movie_or_series x =
     (* only the original title doesn't get printed *)
     print_endline ("\tfr:\t" ^ (string_of_option x.title));
     print_endline ("\tcode:\t" ^ (string_of_int x.ms_code));
-    print_endline ("\tyear:\t" ^ (string_of_int_o x.productionYear));
+    print_endline ("\tprod:\t" ^ (string_of_int_o x.productionYear));
+    print_endline ("\trel:\t" ^ (string_of_date_o x.releaseDate));
+    let d = date_of_movie_or_series x in
+    print_endline ("\tdate:\t" ^ (string_of_date_o d));
     print_endline "\tdirectors:";
     x.directors |> List.iter (fun x -> print_endline ("\t\t"^x));
     print_endline "\tmain actors:";
