@@ -55,7 +55,7 @@ let person_from_search v = {
         v |> Util.member "picture" |>
         function
         | `Null -> None
-        | _ as x -> x |> Util.member "path" |> Util.to_string_option;
+        | _ as x -> x |> Util.member "href" |> Util.to_string_option;
 }
 
 let movie_or_series_from_search v =
@@ -70,7 +70,7 @@ let movie_or_series_from_search v =
         v |> Util.member "poster" |>
         function
         | `Null -> None
-        | _ as x -> Some (x |> Util.member "path" |> Util.to_string));
+        | _ as x -> Some (x |> Util.member "href" |> Util.to_string));
     userRating =
         v |> Util.member "statistics" |>
         function
