@@ -12,7 +12,7 @@ let () = Lwt_main.run (
     let get_idx =
         let sql = "SELECT m.Idx, Title_Orig, " ^
             "CONCAT(forename, ' ', lastname) AS name " ^
-            "FROM movies m INNER JOIN directors d ON m.MainDirector=d.Idx " ^
+            "FROM movies m LEFT JOIN directors d ON m.MainDirector=d.Idx " ^
             "WHERE cover=?" in
         Prepared.create my sql in
     let set_a = Prepared.create my "UPDATE movies SET allocine=? WHERE idx=?" in
@@ -27,14 +27,19 @@ let () = Lwt_main.run (
         | Some row ->
             let idx = not_null str2ml row.(0) in
             let title_orig = not_null str2ml row.(1) in
-            let main_director = not_null str2ml row.(2) in
+            let main_director = opt str2ml row.(2) in
             searches := (search title_orig 10 >>= fun results ->
-                match process_one (fun x ->
-                    match x with
-                    | Movie x | Series x
-                        when List.exists ((=) main_director) x.directors ->
-                        Some x
-                    | _ -> None
+                match process_one (function
+                | Movie x
+                | Series x ->
+                    (match main_director with
+                    | None -> Some x
+                    | Some director ->
+                        if List.exists ((=) director) x.directors then
+                            Some x
+                        else
+                            None)
+                | _ -> None
                 ) results with
                 | None ->
                     printf "echo failed idx %s\n" idx;
