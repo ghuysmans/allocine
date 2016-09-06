@@ -37,12 +37,12 @@ type date = {
     year: int;
 }
 
-(* TODO exception Invalid_date *)
-let to_date s = {
+let to_date s = try Some {
     day = String.sub s 8 2 |> int_of_string;
     month = String.sub s 5 2 |> int_of_string;
     year = String.sub s 0 4 |> int_of_string;
 }
+with _ -> None
 
 let string_of_date d =
     Printf.sprintf "%d-%02d-%02d" d.year d.month d.day

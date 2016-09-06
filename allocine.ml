@@ -77,9 +77,13 @@ let movie_or_series_from_search v =
             | `Null -> None
             | _ as x -> Some {day = 0; month = 0; year = Util.to_int x})
         | _ as x ->
-            Some (x |> Util.member "releaseDate" |> Util.to_string |> to_date));
-    directors = cs |> Util.member "directors" |> Util.to_string_option |> split;
-    mainActors = cs |> Util.member "actors" |> Util.to_string_option |> split;
+            x |> Util.member "releaseDate" |> Util.to_string |> to_date);
+    directors = (match cs with
+        | `Null -> []
+        | _ -> cs |> Util.member "directors" |> Util.to_string_option |> split);
+    mainActors = (match cs with
+        | `Null -> []
+        | _ -> cs |> Util.member "actors" |> Util.to_string_option |> split);
     poster = (
         v |> Util.member "poster" |>
         function
@@ -89,7 +93,10 @@ let movie_or_series_from_search v =
         v |> Util.member "statistics" |>
         function
         | `Null -> None
-        | _ as x -> x |> Util.member "userRating" |> Util.to_float_option;
+        | _ as x -> x |> Util.member "userRating" |> function
+            | `Float f -> Some f
+            | `Int i -> Some (float_of_int i)
+            | _ -> None
 }
 
 let search query max_results =
