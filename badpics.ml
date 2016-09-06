@@ -42,7 +42,7 @@ let () = Lwt_main.run (
                 | _ -> None
                 ) results with
                 | None ->
-                    printf "echo failed idx %s\n" idx;
+                    printf "echo failed %s (%s)\n" cover idx;
                     return ()
                 | Some x ->
                     let params = [| string_of_int x.ms_code; idx |] in
