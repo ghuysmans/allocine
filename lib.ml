@@ -65,3 +65,19 @@ let cache f m p =
         close_out ch;
         return res
     | Some x -> x
+
+let process_lines in_ch process =
+    let rec read_all () =
+        try
+            let line = input_line in_ch in
+            process line;
+            read_all ()
+        with End_of_file -> () in
+    read_all ();
+    close_in in_ch
+
+let rec process_one f = function
+| [] -> None
+| h :: t -> match f h with
+    | Some x -> Some x
+    | None -> process_one f t

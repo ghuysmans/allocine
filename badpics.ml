@@ -1,23 +1,22 @@
 open Lib
 open Printf
 open Mysql
+open Lwt
+open Allocine
+open Movies
 
-let process_lines in_ch process =
-    let rec read_all () =
-        try
-            let line = input_line in_ch in
-            process line;
-            read_all ()
-        with End_of_file -> () in
-    read_all ();
-    close_in in_ch
-
-let () =
+let () = Lwt_main.run (
     let in_ch = open_in Sys.argv.(1) in
     let dl_dir = Sys.argv.(2) in
     let my = Mysql_config.connection in
-    let get_idx = Prepared.create my "SELECT Idx FROM movies WHERE cover=?" in
+    let get_idx =
+        let sql = "SELECT m.Idx, Title_Orig, " ^
+            "CONCAT(forename, ' ', lastname) AS name " ^
+            "FROM movies m INNER JOIN directors d ON m.MainDirector=d.Idx " ^
+            "WHERE cover=?" in
+        Prepared.create my sql in
     let set_a = Prepared.create my "UPDATE movies SET allocine=? WHERE idx=?" in
+    let searches = ref [] in
     process_lines in_ch (fun line ->
         let cover =
             let pos = String.index line ':' in
@@ -27,14 +26,34 @@ let () =
         | None -> printf "rm %s\n" cover
         | Some row ->
             let idx = not_null str2ml row.(0) in
-            (* TODO fetch search results, find the right one *)
-            let code = 42 in
-            ignore (Prepared.execute set_a [| string_of_int code; idx |]);
-            (* TODO fetch the poster *)
-            let url = "http://localhost/FIXME" in
-            let destination = dl_dir ^ "/" ^ idx in
-            Lwt_main.run (download url destination);
-            printf "cp %s %s\n" destination cover
+            let title_orig = not_null str2ml row.(1) in
+            let main_director = not_null str2ml row.(2) in
+            searches := (search title_orig 10 >>= fun results ->
+                match process_one (fun x ->
+                    match x with
+                    | Movie x | Series x
+                        when List.exists ((=) main_director) x.directors ->
+                        Some x
+                    | _ -> None
+                ) results with
+                | None ->
+                    printf "echo failed idx %s\n" idx;
+                    return ()
+                | Some x ->
+                    let params = [| string_of_int x.ms_code; idx |] in
+                    ignore (Prepared.execute set_a params);
+                    match x.poster with
+                    | None ->
+                        return ()
+                    | Some url ->
+                        let destination = dl_dir ^ "/" ^ idx in
+                        printf "cp %s %s\n" destination cover;
+                        download url destination
+            ) :: !searches
     );
-    Prepared.close get_idx;
-    Prepared.close set_a
+    join !searches >>= (fun _ ->
+        Prepared.close get_idx;
+        Prepared.close set_a;
+        return ()
+    )
+)
