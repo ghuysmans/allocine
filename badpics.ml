@@ -53,7 +53,10 @@ let () = Lwt_main.run (
                     | Some url ->
                         let destination = dl_dir ^ "/" ^ idx in
                         printf "cp %s %s\n" destination cover;
-                        download url destination
+                        if exists destination then
+                            return ()
+                        else
+                            download url destination
             ) :: !searches
     );
     join !searches >>= (fun _ ->

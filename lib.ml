@@ -81,3 +81,10 @@ let rec process_one f = function
 | h :: t -> match f h with
     | Some x -> Some x
     | None -> process_one f t
+
+let exists target =
+    try
+        ignore (Unix.stat target);
+        true;
+    with _ ->
+        false
