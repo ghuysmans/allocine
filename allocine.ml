@@ -44,7 +44,11 @@ let person_from_search v = {
         Util.filter_member "code" |> Util.filter_int |>
         List.map activity_of_code;
     p_code = v |> Util.member "code" |> Util.to_int;
-    male = v |> Util.member "gender" |> Util.to_int = 1;
+    gender = (v |> Util.member "gender" |> Util.to_int_option |>
+        function
+        | Some 0 -> Some Female
+        | Some 1 -> Some Male
+        | _ -> None);
     nationality = (
         v |> Util.member "nationality" |> Util.to_list |>
         List.filter (fun a -> (a |> Util.member "code" |> Util.to_int)<>7240) |>

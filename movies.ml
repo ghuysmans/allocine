@@ -10,12 +10,24 @@ let string_of_activity = function
 | Director -> "director"
 | UnknownActivity -> "?"
 
+type gender =
+| Male
+| Female
+
+let string_of_gender = function
+| Female -> "woman"
+| Male -> "man"
+
+let string_of_gender_o = function
+| Some g -> string_of_gender g
+| None -> "<unknown>"
+
 type person = {
     name: string;
     activities: activity list;
     p_code: int;
-    male: bool; (* 1 *)
-    nationality: string option; (* None=7240 *)
+    gender: gender option;
+    nationality: string option;
     picture: string option;
 }
 
@@ -86,8 +98,7 @@ let print_movie_or_series x =
     print_endline ("\tscore:\t" ^ (string_of_float_o x.userRating))
 
 let print_person p =
-    let who = if p.male then "Man\t" else "Woman\t" in
-    print_string (who ^ p.name ^ ": ");
+    print_string (string_of_gender_o p.gender ^ "\t" ^ p.name ^ ": ");
     p.activities |> List.iter (fun x ->
         print_string ((string_of_activity x)^" "));
     print_string "\n"
