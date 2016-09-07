@@ -114,3 +114,6 @@ let search query max_results =
         let l = Util.to_list v in
         Some (List.map (fun x -> Series (movie_or_series_from_search x)) l)
     | _ -> None) |> List.flatten;;
+
+let clean_director =
+    Str.replace_first (Str.regexp " ([VI]+)$") ""

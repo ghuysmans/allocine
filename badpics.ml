@@ -27,7 +27,9 @@ let () = Lwt_main.run (
         | Some row ->
             let idx = not_null str2ml row.(0) in
             let title_orig = not_null str2ml row.(1) in
-            let main_director = opt str2ml row.(2) in
+            let main_director = match opt str2ml row.(2) with
+                | None -> None
+                | Some d -> Some (clean_director d) in
             searches := (search title_orig 10 >>= fun results ->
                 match process_one (function
                     | Movie x
@@ -35,7 +37,8 @@ let () = Lwt_main.run (
                         (match main_director with
                         | None -> Some x
                         | Some director ->
-                            if List.exists ((=) director) x.directors then
+                            let l = List.map clean_director x.directors in
+                            if List.exists ((=) director) l then
                                 Some x
                             else
                                 None)
