@@ -16,6 +16,7 @@ let () = Lwt_main.run (
             "WHERE cover=?" in
         Prepared.create my sql in
     let set_a = Prepared.create my "UPDATE movies SET allocine=? WHERE idx=?" in
+    let rst_c = Prepared.create my "UPDATE movies SET cover=NULL WHERE idx=?" in
     let searches = ref [] in
     process_lines in_ch (fun line ->
         let cover =
@@ -47,6 +48,8 @@ let () = Lwt_main.run (
                 | None ->
                     printf "echo unmatched %s (%s) by %s\n"
                         title_orig idx (string_of_option main_director);
+                    printf "rm %s\n" cover;
+                    ignore (Prepared.execute rst_c [| idx |]);
                     return ()
                 | Some x ->
                     let params = [| string_of_int x.ms_code; idx |] in
@@ -68,6 +71,7 @@ let () = Lwt_main.run (
     join !searches >>= (fun _ ->
         Prepared.close get_idx;
         Prepared.close set_a;
+        Prepared.close rst_c;
         return ()
     )
 )
