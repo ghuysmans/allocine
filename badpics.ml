@@ -42,13 +42,16 @@ let () = Lwt_main.run (
                     | _ -> None
                 ) results with
                 | None ->
-                    printf "echo failed %s (%s)\n" cover idx;
+                    printf "echo unmatched %s (%s) by %s\n"
+                        title_orig idx (string_of_option main_director);
                     return ()
                 | Some x ->
                     let params = [| string_of_int x.ms_code; idx |] in
                     ignore (Prepared.execute set_a params);
                     match x.poster with
                     | None ->
+                        printf "echo poster deleted from Allocine %s (%s)\n"
+                            cover title_orig;
                         return ()
                     | Some url ->
                         let destination = dl_dir ^ "/" ^ idx in
