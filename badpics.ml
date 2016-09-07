@@ -15,8 +15,6 @@ let () = Lwt_main.run (
             "FROM movies m LEFT JOIN directors d ON m.MainDirector=d.Idx " ^
             "WHERE cover=?" in
         Prepared.create my sql in
-    let set_a = Prepared.create my "UPDATE movies SET allocine=? WHERE idx=?" in
-    let rst_c = Prepared.create my "UPDATE movies SET cover=NULL WHERE idx=?" in
     let searches = ref [] in
     process_lines in_ch (fun line ->
         let cover =
@@ -31,6 +29,9 @@ let () = Lwt_main.run (
             let main_director = match opt str2ml row.(2) with
                 | None -> None
                 | Some d -> Some (clean_director d) in
+            let del () =
+                printf "echo UPDATE movies SET cover=NULL WHERE idx=%s\n" idx;
+                printf "rm %s\n" cover in
             searches := (search title_orig 10 >>= fun results ->
                 match process_one (function
                     | Movie x
@@ -46,18 +47,14 @@ let () = Lwt_main.run (
                     | _ -> None
                 ) results with
                 | None ->
-                    printf "echo unmatched %s (%s) by %s\n"
-                        title_orig idx (string_of_option main_director);
-                    printf "rm %s\n" cover;
-                    ignore (Prepared.execute rst_c [| idx |]);
+                    del ();
                     return ()
                 | Some x ->
-                    let params = [| string_of_int x.ms_code; idx |] in
-                    ignore (Prepared.execute set_a params);
+                    printf "echo UPDATE movies SET allocine=%s WHERE idx=%s\n"
+                        (string_of_int x.ms_code) idx;
                     match x.poster with
                     | None ->
-                        printf "echo poster deleted from Allocine %s (%s)\n"
-                            cover title_orig;
+                        del ();
                         return ()
                     | Some url ->
                         let destination = dl_dir ^ "/" ^ idx in
@@ -70,8 +67,6 @@ let () = Lwt_main.run (
     );
     join !searches >>= (fun _ ->
         Prepared.close get_idx;
-        Prepared.close set_a;
-        Prepared.close rst_c;
         return ()
     )
 )
