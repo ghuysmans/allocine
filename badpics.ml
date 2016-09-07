@@ -30,16 +30,16 @@ let () = Lwt_main.run (
             let main_director = opt str2ml row.(2) in
             searches := (search title_orig 10 >>= fun results ->
                 match process_one (function
-                | Movie x
-                | Series x ->
-                    (match main_director with
-                    | None -> Some x
-                    | Some director ->
-                        if List.exists ((=) director) x.directors then
-                            Some x
-                        else
-                            None)
-                | _ -> None
+                    | Movie x
+                    | Series x ->
+                        (match main_director with
+                        | None -> Some x
+                        | Some director ->
+                            if List.exists ((=) director) x.directors then
+                                Some x
+                            else
+                                None)
+                    | _ -> None
                 ) results with
                 | None ->
                     printf "echo failed %s (%s)\n" cover idx;
