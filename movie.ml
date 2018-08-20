@@ -1,7 +1,8 @@
-(* TODO implement parsing in allocine.ml *)
 open Allocine
+open Lwt.Infix
 
-let _ =
-    let json = Lwt_main.run (allocine "movie"
-        [("format", "json"); ("code", Sys.argv.(1)); ("profile", "large")]) in
-    print_endline json
+let () = Lwt_main.run (
+  movie (int_of_string Sys.argv.(1)) >>= fun m ->
+  let open Allocine_t in
+  Lwt_io.printf "%s\n" m.mov_original_title
+)

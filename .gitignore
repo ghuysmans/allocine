@@ -2,6 +2,8 @@ net_config*
 mysql_config.ml
 *.json
 *.byte
-_build
+_build/
 *.swp
-cache
+cache/
+*_t*
+*_j*

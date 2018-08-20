@@ -1,11 +1,19 @@
 open Allocine
-open Movies
-open Printf
+open Lwt.Infix
 
-let _ =
-    let body = Lwt_main.run (search Sys.argv.(1) 10) in
-    printf "items: %d\n" (List.length body);
-    body |> List.iter (function
-    | Person p -> print_person p
-    | Movie m -> print_movie m
-    | Series s -> print_series s)
+let () = Lwt_main.run (
+  search Sys.argv.(1) 10 >>= fun d ->
+  let open Allocine_j in
+  Lwt_io.printf "movies\t%d\nseries\t%d\nnews\t%d\npeople\t%d\nmedia\t%d\n"
+    (List.length d.movies)
+    (List.length d.series)
+    (List.length d.news)
+    (List.length d.people)
+    (List.length d.media) >>= fun () ->
+  Lwt_io.printl "movies:\nID\tprod\ttitle" >>= fun () ->
+  d.movies |> Lwt_list.iter_s @@ fun m ->
+  Lwt_io.printf "%d\t%d\t%s\n"
+    m.mov_code
+    m.mov_production_year
+    m.mov_original_title
+)

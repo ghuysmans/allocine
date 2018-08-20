@@ -1,0 +1,261 @@
+type atom <ocaml from="Allocine_atom"> = abstract
+
+type date = string wrap <ocaml module="Allocine_date">
+
+type code_name = {
+  code: int;
+  name: string;
+} <ocaml field_prefix="cn_">
+
+type release = {
+  date <json name="releaseDate">: date;
+  ?country: atom option;
+  ?state <json name="releaseState">: atom option; (* FIXME *)
+  ?distributor: code_name option;
+}
+
+type strings = string wrap <ocaml module="String_list">
+
+type casting_short = {
+  ?directors: strings option;
+  ?actors: strings option;
+}
+
+type picture = {
+  (* path: string; *)
+  href: string;
+} <ocaml field_prefix="pic_">
+
+type link = {
+  rel: string;
+  href: string;
+} <ocaml field_prefix="lnk_">
+
+type certificate = {
+  certificate: atom;
+}
+
+type rating = {
+  score <json name="note">: float;
+  count <json name="$">: int;
+} <ocaml field_prefix="rat_">
+
+type statistics = {
+  ?press_rating <json name="pressRating">: float option;
+  ?user_rating <json name="userRating">: float option;
+  ?award_count <json name="awardCount">: int option;
+  ?nomination_count <json name="nominationCount">: int option;
+  ?rating: rating list option;
+  ?fan_count <json name="fanCount">: int option;
+  ?want_to_see_count <json name="wantToSeeCount">: int option;
+  ?admission_count <json name="admissionCount">: int option;
+}
+
+type cast_member = {
+  person: code_name;
+  activity: activity;
+  ?picture: picture option;
+}
+
+type publication = {
+  date_start <json name="dateStart">: datetime;
+}
+
+type trivia = {
+  code: int;
+  publication: publication;
+  title: string;
+  body: string;
+} <ocaml field_prefix="tri_">
+
+type tag = {
+  code: int;
+  typ <json name="type">: string;
+  s <json name="$">: string;
+} <ocaml field_prefix="tag_">
+
+type award = {
+  code: int;
+  parent_festival <json name="parentFestival">: code_name;
+  parent_edition <json name="parentEdition">: code_name;
+  typ <json name="awardType">: atom;
+  name: string;
+} <ocaml field_prefix="awa_">
+
+type source = {
+  code: int;
+  name: string;
+  ?href: string option;
+} <ocaml field_prefix="src_">
+
+type writer = {
+  code: string;
+  name: string;
+  avatar: string;
+} <ocaml field_prefix="ava_">
+
+type datetime = string wrap <ocaml module="Allocine_datetime">
+
+type review = {
+  code: int;
+  creation_date <json name="creationDate">: datetime;
+  ?news_source <json name="newsSource">: source option;
+  ?writer: writer option;
+  ?author: string option;
+  body: string;
+  rating: float;
+} <ocaml field_prefix="rev_">
+
+type reviews = review list (* FIXME? *)
+
+type binary = int wrap <ocaml module="Binary">
+
+type movie = {
+  code: int;
+  ?movie_type <json name="movieType">: atom option;
+  original_title <json name="originalTitle">: string;
+  ?title <json name="title">: string option;
+  ?keywords: string option;
+  production_year <json name="productionYear">: int;
+  ?nationality: nationality option;
+  ?genre: atom list option;
+  ?release: release option;
+  ?duration <json name="runtime">: int option;
+  ?color: atom option; (* FIXME? *)
+  ?language: atom list option;
+  ?budget: string option;
+  ?synopsis: string option;
+  ?synopsis_short <json name="synopsisShort">: string option;
+  ?casting_short <json name="castingShort">: casting_short option;
+  ?cast <json name="castMember">: cast_member list option;
+  ?certificate <json name="movieCertificate">: certificate option;
+  ?poster: picture option;
+  (* ?trailer: picture option; *)
+  ?trailer_embed <json name="trailerEmbed">: string option;
+  ?has_vod <json name="hasVOD">: binary option;
+  ?has_svod <json name="hasSVOD">: binary option;
+  ?has_showtime <json name="hasShowtime">: binary option;
+  ?dvd_release <json name="dvdReleaseDate">: date option;
+  ?bd_release <json name="bluRayReleaseDate">: date option;
+  links <json name="link">: link list;
+  ?statistics: statistics option;
+  ?media: media list option;
+  ?news: news list option;
+  ?trivia: trivia list option;
+  ?tags <json name="tag">: tag list option;
+  ?awards <json name="festivalAward">: award list option;
+  ?helpful_positive_review <json name="helpfulPositiveReview">: reviews option;
+  ?helpful_negative_review <json name="helpfulNegativeReview">: reviews option;
+  ?best_press_review <json name="bestPressReview">: reviews option;
+  ?worst_press_review <json name="worstPressReview">: reviews option;
+} <ocaml field_prefix="mov_">
+
+
+type activity = atom wrap <ocaml module="Allocine_activity">
+type nationality = atom list wrap <ocaml module="Allocine_nationality">
+
+type person = {
+  code: int;
+  name: string;
+  gender: int wrap <ocaml module="Allocine_gender">;
+  ?activities <json name="activity">: activity list option;
+  nationality: nationality;
+  ?picture: picture option;
+  links <json name="link">: link list;
+} <ocaml field_prefix="per_">
+
+
+type series = {
+  code: int;
+  original_title <json name="originalTitle">: string;
+  casting_short <json name="castingShort">: casting_short;
+  year_start <json name="yearStart">: int;
+  ?year_end <json name="yearEnd">: int option;
+  season_count <json name="seasonCount">: int;
+  ?statistics: statistics option;
+  ?poster: picture option;
+  links <json name="link">: link list;
+} <ocaml field_prefix="ser_">
+
+
+type category = atom
+
+type news = {
+  code: int;
+  publication: publication;
+  title: string;
+  picture: picture;
+  category <json name="category">: category list;
+} <ocaml field_prefix="new_">
+
+
+type cls = [
+  | Picture <json name="picture">
+  | Video <json name="video">
+]
+
+type format = atom
+
+type rendition = {
+  (* path: string; *)
+  href: string;
+  ?format: format option;
+} <ocaml field_prefix="ren_">
+
+type typ = atom
+
+type media = {
+  cls <json name="class">: cls;
+  code: int;
+  ?rcode: int option;
+  typ <json name="type">: typ;
+  title: string;
+  thumbnail: picture;
+  ?width: int option;
+  ?height: int option;
+  ?link: link list option;
+} <ocaml field_prefix="med_">
+
+
+type search_publication = {
+  date_start <json name="dateStart">: date;
+} <ocaml field_prefix="spu_">
+
+type search_news = {
+  code: int;
+  title: string;
+  headline: string;
+  publication: search_publication;
+  picture: picture;
+  category <json name="category">: category list;
+} <ocaml field_prefix="snw_">
+
+type search_media = {
+  cls <json name="class">: cls;
+  code: int;
+  ?rcode: int option;
+  typ <json name="type">: typ;
+  description: string;
+  ?trailer_embed <json name="trailerEmbed">: string option; (* FIXME only video *)
+  renditions <json name="rendition">: rendition list;
+} <ocaml field_prefix="sme_">
+
+type feed = {
+  page: int;
+  count: int;
+  total_results <json name="totalResults">: int;
+  movies <json name="movie">: movie list;
+  people <json name="person">: person list;
+  series <json name="tvseries">: series list;
+  news: search_news list;
+  media: search_media list;
+}
+
+type search = {
+  feed: feed;
+}
+
+
+type get_movie = {
+  movie: movie;
+}

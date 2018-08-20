@@ -1,119 +1,53 @@
-(* TODO use the same interface for different providers *)
-open Lib
-open Movies
-open Lwt
-open Cohttp
-open Cohttp_lwt_unix
-open Yojson.Basic
-open Sexplib (* TODO caching using a hash *)
+open Lwt.Infix
 
 (* Low-level API call *)
 let allocine service_method parameters =
-    let open Unix in
-    let open Net_config in
-    let sed = (
-        let t = localtime (time ()) in
-        Printf.sprintf "%d%02d%02d" (t.tm_year+1900) (t.tm_mon+1) t.tm_mday) in
-    let signed =
-        let converted = List.map (fun (a,b) -> (a, [b])) parameters in
-        let enc = Uri.encoded_of_query in
-        enc (("sed", [sed]) :: ("partner", [partner_key]) :: converted) in
-    let signature =
-        (private_key ^ signed) |> Sha1.string |> Sha1.to_bin |> B64.encode in
-    let uri =
-        api_url ^ service_method ^ "?" ^ signed ^ "&sig=" ^ signature in
-    let header = Header.init_with "User-Agent" user_agent in
-    Client.call ~headers:header `GET (Uri.of_string uri) >>= fun (resp, body) ->
-    let status = Response.status resp in
-    match status with
-    | `OK -> body |> Cohttp_lwt_body.to_string
-    | _ -> raise (HttpError (Code.code_of_status status))
+  let signed =
+    let sed =
+      let open Unix in
+      let t = localtime (time ()) in
+      Printf.sprintf "%d%02d%02d" (t.tm_year+1900) (t.tm_mon+1) t.tm_mday
+    in
+    let converted = List.map (fun (a,b) -> (a, [b])) parameters in
+    Uri.encoded_of_query @@
+      ("sed", [sed]) :: ("partner", [Net_config.partner_key]) :: converted
+  in
+  let signature =
+    (Net_config.private_key ^ signed) |> Sha1.string |>
+    Sha1.to_bin |> B64.encode
+  in
+  let uri =
+    Uri.of_string @@
+    Net_config.api_url ^ service_method ^ "?" ^ signed ^ "&sig=" ^ signature
+  in
+  let header = Cohttp.Header.init_with "User-Agent" Net_config.user_agent in
+  Cohttp_lwt_unix.Client.call ~headers:header `GET uri >>= fun (resp, body) ->
+  let status = Cohttp.Response.status resp in
+  match status with
+  | `OK -> body |> Cohttp_lwt.Body.to_string
+  | _ -> raise (Lib.HttpError (Cohttp.Code.code_of_status status))
 
-let allocine = cache allocine
-
-
-let activity_of_code = function
-| 8001 -> Actor
-| 8002 -> Director
-| _ -> UnknownActivity
-
-let person_from_search v = {
-    name = v |> Util.member "name" |> Util.to_string;
-    activities =
-        v |> Util.member "activity" |> Util.to_list |>
-        Util.filter_member "code" |> Util.filter_int |>
-        List.map activity_of_code;
-    p_code = v |> Util.member "code" |> Util.to_int;
-    gender = (v |> Util.member "gender" |> Util.to_int_option |>
-        function
-        | Some 0 -> Some Female
-        | Some 1 -> Some Male
-        | _ -> None);
-    nationality = (
-        v |> Util.member "nationality" |> Util.to_list |>
-        List.filter (fun a -> (a |> Util.member "code" |> Util.to_int)<>7240) |>
-        function
-        | h::_ -> Some (h |> Util.member "$" |> Util.to_string)
-        | [] -> None);
-    picture =
-        v |> Util.member "picture" |>
-        function
-        | `Null -> None
-        | _ as x -> x |> Util.member "href" |> Util.to_string_option;
-}
-
-let movie_or_series_from_search v =
-    let cs = Util.member "castingShort" v in {
-    originalTitle = v |> Util.member "originalTitle" |> Util.to_string;
-    title = v |> Util.member "title" |> Util.to_string_option;
-    ms_code = v |> Util.member "code" |> Util.to_int;
-    productionYear = v |> Util.member "productionYear" |> Util.to_int_option;
-    releaseDate = (
-        v |> Util.member "release" |>
-        function
-        | `Null -> (
-            v |> Util.member "yearStart" |>
-            function
-            | `Null -> None
-            | _ as x -> Some {day = 0; month = 0; year = Util.to_int x})
-        | _ as x ->
-            x |> Util.member "releaseDate" |> Util.to_string |> to_date);
-    directors = (match cs with
-        | `Null -> []
-        | _ -> cs |> Util.member "directors" |> Util.to_string_option |> split);
-    mainActors = (match cs with
-        | `Null -> []
-        | _ -> cs |> Util.member "actors" |> Util.to_string_option |> split);
-    poster = (
-        v |> Util.member "poster" |>
-        function
-        | `Null -> None
-        | _ as x -> Some (x |> Util.member "href" |> Util.to_string));
-    userRating =
-        v |> Util.member "statistics" |>
-        function
-        | `Null -> None
-        | _ as x -> x |> Util.member "userRating" |> function
-            | `Float f -> Some f
-            | `Int i -> Some (float_of_int i)
-            | _ -> None
-}
+let allocine = Lib.cache allocine
 
 let search query max_results =
-    let params = ["q", query; "count", string_of_int max_results] in
-    allocine "search" (("format", "json")::params) >|= fun s ->
-    from_string s |> Util.member "feed" |>
-    Util.to_assoc |> Util.filter_map (fun (k, v) -> match k with
-    | "person" ->
-        let l = Util.to_list v in
-        Some (List.map (fun x -> Person (person_from_search x)) l)
-    | "movie" ->
-        let l = Util.to_list v in
-        Some (List.map (fun x -> Movie (movie_or_series_from_search x)) l)
-    | "tvseries" ->
-        let l = Util.to_list v in
-        Some (List.map (fun x -> Series (movie_or_series_from_search x)) l)
-    | _ -> None) |> List.flatten;;
+  let p = ["q", query; "count", string_of_int max_results] in
+  allocine "search" (("format", "json") :: p) >|=
+  Bytes.unsafe_to_string >|=
+  Atdgen_runtime.Util.Json.from_string Allocine_j.read_search >|= fun s ->
+  s.Allocine_t.feed
 
-let clean_director =
-    Str.replace_first (Str.regexp " ([VI]+)$") ""
+let movie id =
+  let p = [("code", string_of_int id); ("profile", "large")] in
+  allocine "movie" (("format", "json") :: p) >|=
+  Bytes.unsafe_to_string >|=
+  Atdgen_runtime.Util.Json.from_string Allocine_j.read_get_movie >|= fun m ->
+  m.Allocine_t.movie
+
+let clean_director s =
+  let re = Re.(compile (seq [
+    group (rep any);
+    blank; char '('; rep (alt [char 'V'; char 'I']); char ')'; eos
+  ])) in
+  match Re.exec_opt re s with
+  | None -> s
+  | Some g -> Re.get g 1
