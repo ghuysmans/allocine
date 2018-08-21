@@ -43,6 +43,13 @@ let movie id =
   Atdgen_runtime.Util.Json.from_string Allocine_j.read_get_movie >|= fun m ->
   m.Allocine_t.movie
 
+let person id =
+  let p = [("code", string_of_int id); ("profile", "large")] in
+  allocine "person" (("format", "json") :: p) >|=
+  Bytes.unsafe_to_string >|=
+  Atdgen_runtime.Util.Json.from_string Allocine_j.read_get_person >|= fun m ->
+  m.Allocine_t.person
+
 let clean_director s =
   let re = Re.(compile (seq [
     group (rep any);

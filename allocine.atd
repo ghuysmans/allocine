@@ -1,3 +1,6 @@
+(* TODO split this into allocine_full and allocine_search, and rework types *)
+(* TODO inherit? *)
+
 type atom <ocaml from="Allocine_atom"> = abstract
 
 type date = string wrap <ocaml module="Allocine_date">
@@ -17,8 +20,8 @@ type release = {
 type strings = string wrap <ocaml module="String_list">
 
 type casting_short = {
-  ?directors: strings option;
-  ?actors: strings option;
+  ~directors <ocaml default="[]">: strings;
+  ~actors <ocaml default="[]">: strings;
 }
 
 type picture = {
@@ -45,7 +48,7 @@ type statistics = {
   ?user_rating <json name="userRating">: float option;
   ?award_count <json name="awardCount">: int option;
   ?nomination_count <json name="nominationCount">: int option;
-  ?rating: rating list option;
+  ~rating: rating list;
   ?fan_count <json name="fanCount">: int option;
   ?want_to_see_count <json name="wantToSeeCount">: int option;
   ?admission_count <json name="admissionCount">: int option;
@@ -106,7 +109,7 @@ type review = {
   rating: float;
 } <ocaml field_prefix="rev_">
 
-type reviews = review list (* FIXME? *)
+type 'a first = 'a list wrap <ocaml module="First" t="'a First.t">
 
 type binary = int wrap <ocaml module="Binary">
 
@@ -118,16 +121,16 @@ type movie = {
   ?keywords: string option;
   production_year <json name="productionYear">: int;
   ?nationality: nationality option;
-  ?genre: atom list option;
+  ~genre: atom list;
   ?release: release option;
   ?duration <json name="runtime">: int option;
   ?color: atom option; (* FIXME? *)
-  ?language: atom list option;
+  ~language: atom list;
   ?budget: string option;
   ?synopsis: string option;
   ?synopsis_short <json name="synopsisShort">: string option;
   ?casting_short <json name="castingShort">: casting_short option;
-  ?cast <json name="castMember">: cast_member list option;
+  ~cast <json name="castMember">: cast_member list;
   ?certificate <json name="movieCertificate">: certificate option;
   ?poster: picture option;
   (* ?trailer: picture option; *)
@@ -137,38 +140,80 @@ type movie = {
   ?has_showtime <json name="hasShowtime">: binary option;
   ?dvd_release <json name="dvdReleaseDate">: date option;
   ?bd_release <json name="bluRayReleaseDate">: date option;
-  links <json name="link">: link list;
+  ~links <json name="link">: link list; (* for participation... *)
   ?statistics: statistics option;
-  ?media: media list option;
-  ?news: news list option;
-  ?trivia: trivia list option;
-  ?tags <json name="tag">: tag list option;
-  ?awards <json name="festivalAward">: award list option;
-  ?helpful_positive_review <json name="helpfulPositiveReview">: reviews option;
-  ?helpful_negative_review <json name="helpfulNegativeReview">: reviews option;
-  ?best_press_review <json name="bestPressReview">: reviews option;
-  ?worst_press_review <json name="worstPressReview">: reviews option;
+  ~media: media list;
+  ~news: news list;
+  ~trivia: trivia list;
+  ~tags <json name="tag">: tag list;
+  ~awards <json name="festivalAward">: award list;
+  ~helpful_pos_review <ocaml default="None"> <json name="helpfulPositiveReview">: review first;
+  ~helpful_neg_review <ocaml default="None"> <json name="helpfulNegativeReview">: review first;
+  ~best_press_review <ocaml default="None"> <json name="bestPressReview">: review first;
+  ~worst_press_review <ocaml default="None"> <json name="worstPressReview">: review first;
 } <ocaml field_prefix="mov_">
 
 
 type activity = atom wrap <ocaml module="Allocine_activity">
 type nationality = atom list wrap <ocaml module="Allocine_nationality">
 
+type name = {
+  given: string;
+  family: string;
+}
+
+type participation = {
+  movie: movie;
+  activity: activity;
+  ?role: string option;
+} <ocaml field_prefix="par_">
+
+type section_movie = {
+  code: int;
+  title: string;
+  production_year <json name="productionYear">: int;
+  ~genre: atom list;
+  ?casting_short <json name="castingShort">: casting_short option;
+  ?poster: picture option;
+} <ocaml field_prefix="fmo_">
+
+type entities = {
+  movie: section_movie;
+} <ocaml field_prefix="ent_">
+
+type festival_section = {
+  code: int;
+  parent_festival <json name="parentFestival">: code_name;
+  parent_edition <json name="parentEdition">: code_name;
+  typ <json name="sectionType">: atom;
+  name: string;
+  entities: entities;
+} <ocaml field_prefix="sec_">
+
 type person = {
   code: int;
-  name: string;
+  name: name;
   gender: int wrap <ocaml module="Allocine_gender">;
-  ?activities <json name="activity">: activity list option;
   nationality: nationality;
+  ~activities <json name="activity">: activity list;
+  biography_short <json name="biographyShort">: string;
+  biography_html <json name="biography">: string;
+  birth_date <json name="birthDate">: date;
+  birth_place <json name="birthPlace">: string;
   ?picture: picture option;
-  links <json name="link">: link list;
+  has_top_filmography <json name="hasTopFilmography">: binary;
+  link: link first;
+  participation: participation list;
+  ~media: media list;
+  ~news: news list;
+  ~festival_sections <json name="festivalSection">: festival_section list;
 } <ocaml field_prefix="per_">
 
 
 type series = {
   code: int;
   original_title <json name="originalTitle">: string;
-  casting_short <json name="castingShort">: casting_short;
+  ?casting_short <json name="castingShort">: casting_short option;
   year_start <json name="yearStart">: int;
   ?year_end <json name="yearEnd">: int option;
   season_count <json name="seasonCount">: int;
@@ -213,7 +258,7 @@ type media = {
   thumbnail: picture;
   ?width: int option;
   ?height: int option;
-  ?link: link list option;
+  ~link <ocaml default="None">: link first;
 } <ocaml field_prefix="med_">
 
 
@@ -244,11 +289,11 @@ type feed = {
   page: int;
   count: int;
   total_results <json name="totalResults">: int;
-  movies <json name="movie">: movie list;
-  people <json name="person">: person list;
-  series <json name="tvseries">: series list;
-  news: search_news list;
-  media: search_media list;
+  ~movies <json name="movie">: movie list;
+  ~people <json name="person">: person list;
+  ~series <json name="tvseries">: series list;
+  ~news: search_news list;
+  ~media: search_media list;
 }
 
 type search = {
@@ -257,5 +302,11 @@ type search = {
 
 
 type get_movie = {
-  movie: movie;
+  ?movie: movie option;
+  (* FIXME handle errors *)
+}
+
+type get_person = {
+  ?person: person option;
+  (* FIXME handle errors *)
 }
