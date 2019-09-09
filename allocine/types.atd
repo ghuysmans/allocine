@@ -1,9 +1,9 @@
 (* TODO split this into allocine_full and allocine_search, and rework types *)
 (* TODO inherit? *)
 
-type atom <ocaml from="Allocine_atom"> = abstract
+type atom <ocaml from="Atom"> = abstract
 
-type date = string wrap <ocaml module="Allocine_date">
+type date = string wrap <ocaml module="Date">
 
 type code_name = {
   code: int;
@@ -97,7 +97,7 @@ type writer = {
   avatar: string;
 } <ocaml field_prefix="ava_">
 
-type datetime = string wrap <ocaml module="Allocine_datetime">
+type datetime = string wrap <ocaml module="Datetime">
 
 type review = {
   code: int;
@@ -154,8 +154,8 @@ type movie = {
 } <ocaml field_prefix="mov_">
 
 
-type activity = atom wrap <ocaml module="Allocine_activity">
-type nationality = atom list wrap <ocaml module="Allocine_nationality">
+type activity = atom wrap <ocaml module="Activity">
+type nationality = atom list wrap <ocaml module="Nationality">
 
 type name = {
   given: string;
@@ -193,7 +193,7 @@ type festival_section = {
 type person = {
   code: int;
   name: name;
-  gender: int wrap <ocaml module="Allocine_gender">;
+  gender: int wrap <ocaml module="Gender">;
   nationality: nationality;
   ~activities <json name="activity">: activity list;
   biography_short <json name="biographyShort">: string;

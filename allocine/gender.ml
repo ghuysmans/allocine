@@ -1,5 +1,3 @@
-open Allocine_atom_t
-
 type t =
   | Male
   | Female

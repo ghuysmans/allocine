@@ -12,7 +12,7 @@ let download url destination =
     match status with
     | `OK -> Cohttp_lwt.Body.to_string body >>= fun s ->
         let c = open_out destination in
-        output c s 0 (String.length s);
+        output c (Bytes.unsafe_of_string s) 0 (String.length s);
         close_out c;
         return ()
     | _ -> raise (HttpError (Code.code_of_status status))
@@ -45,7 +45,7 @@ let cache f m p =
     match cached with
     | None -> f m p >>= fun res ->
         let ch = open_out fn in
-        output ch res 0 (String.length res);
+        output ch res 0 (Bytes.length res);
         close_out ch;
         return res
     | Some x -> x

@@ -1,0 +1,3 @@
+(executables
+ (names search movie person cached_search cached_movie cached_person)
+ (libraries allocine tyre))

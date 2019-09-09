@@ -2,8 +2,8 @@ open Allocine
 open Lwt.Infix
 
 let () = Lwt_main.run (
-  search Sys.argv.(1) 10 >>= fun d ->
-  let open Allocine_j in
+  Api.search Sys.argv.(1) 10 >>= fun d ->
+  let open Types_j in
   Lwt_io.printf "movies\t%d\nseries\t%d\nnews\t%d\npeople\t%d\nmedia\t%d\n"
     (List.length d.movies)
     (List.length d.series)

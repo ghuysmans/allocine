@@ -1,0 +1,3 @@
+(executable
+ (name badpics)
+ (libraries allocine lwt mysql))

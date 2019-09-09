@@ -1,0 +1,19 @@
+(rule
+ (targets atom_t.ml atom_t.mli)
+ (deps atom.atd)
+ (action (run atdgen -t %{deps})))
+(rule
+ (targets atom_j.ml atom_j.mli)
+ (deps atom.atd)
+ (action (run atdgen -j %{deps})))
+(rule
+ (targets types_t.ml types_t.mli)
+ (deps types.atd)
+ (action (run atdgen -t %{deps})))
+(rule
+ (targets types_j.ml types_j.mli)
+ (deps types.atd)
+ (action (run atdgen -j %{deps})))
+(library
+ (name allocine)
+ (libraries atdgen tyre calendar sha cohttp-lwt-unix yojson))

@@ -24,7 +24,9 @@ let allocine service_method parameters =
   Cohttp_lwt_unix.Client.call ~headers:header `GET uri >>= fun (resp, body) ->
   let status = Cohttp.Response.status resp in
   match status with
-  | `OK -> body |> Cohttp_lwt.Body.to_string
+  | `OK ->
+    body |> Cohttp_lwt.Body.to_string >>= fun s ->
+    Lwt.return @@ Bytes.unsafe_of_string s
   | _ -> raise (Lib.HttpError (Cohttp.Code.code_of_status status))
 
 let allocine = Lib.cache allocine
@@ -33,22 +35,22 @@ let search query max_results =
   let p = ["q", query; "count", string_of_int max_results] in
   allocine "search" (("format", "json") :: p) >|=
   Bytes.unsafe_to_string >|=
-  Atdgen_runtime.Util.Json.from_string Allocine_j.read_search >|= fun s ->
-  s.Allocine_t.feed
+  Atdgen_runtime.Util.Json.from_string Types_j.read_search >|= fun s ->
+  s.Types_t.feed
 
 let movie id =
   let p = [("code", string_of_int id); ("profile", "large")] in
   allocine "movie" (("format", "json") :: p) >|=
   Bytes.unsafe_to_string >|=
-  Atdgen_runtime.Util.Json.from_string Allocine_j.read_get_movie >|= fun m ->
-  m.Allocine_t.movie
+  Atdgen_runtime.Util.Json.from_string Types_j.read_get_movie >|= fun m ->
+  m.Types_t.movie
 
 let person id =
   let p = [("code", string_of_int id); ("profile", "large")] in
   allocine "person" (("format", "json") :: p) >|=
   Bytes.unsafe_to_string >|=
-  Atdgen_runtime.Util.Json.from_string Allocine_j.read_get_person >|= fun m ->
-  m.Allocine_t.person
+  Atdgen_runtime.Util.Json.from_string Types_j.read_get_person >|= fun m ->
+  m.Types_t.person
 
 let clean_director s =
   let re = Re.(compile (seq [
@@ -57,4 +59,4 @@ let clean_director s =
   ])) in
   match Re.exec_opt re s with
   | None -> s
-  | Some g -> Re.get g 1
+  | Some g -> Re.Group.get g 1

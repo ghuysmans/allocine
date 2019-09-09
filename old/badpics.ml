@@ -1,9 +1,9 @@
+open Allocine
 open Lib
 open Printf
 open Mysql
 open Lwt
-open Allocine
-open Movies
+open Types_j
 
 let () = Lwt_main.run (
     let in_ch = open_in Sys.argv.(1) in

@@ -1,4 +1,4 @@
-open Allocine_atom_t
+open Atom_t
 
 type t = string list option
 

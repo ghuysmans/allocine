@@ -1,9 +1,0 @@
-B _build/
-PKG lwt
-PKG cohttp
-PKG cohttp.lwt
-PKG yojson
-PKG sha
-PKG tyre
-PKG atdgen
-PKG calendar
