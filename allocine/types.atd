@@ -1,6 +1,3 @@
-(* TODO split this into allocine_full and allocine_search, and rework types *)
-(* TODO inherit? *)
-
 type atom <ocaml from="Atom"> = abstract
 
 type date = string wrap <ocaml module="Date">
@@ -262,6 +259,26 @@ type media = {
 } <ocaml field_prefix="med_">
 
 
+type search_person = {
+  code: int;
+  name: string;
+  gender: int wrap <ocaml module="Gender">;
+  nationality: nationality;
+  ~activities <json name="activity">: activity list;
+  link: link first;
+} <ocaml field_prefix="spe_">
+
+type search_series = {
+  code: int;
+  original_title <json name="originalTitle">: string;
+  ?casting_short <json name="castingShort">: casting_short option;
+  year_start <json name="yearStart">: int;
+  ?year_end <json name="yearEnd">: int option;
+  ?statistics: statistics option;
+  ?poster: picture option;
+  links <json name="link">: link list;
+} <ocaml field_prefix="sse_">
+
 type search_publication = {
   date_start <json name="dateStart">: date;
 } <ocaml field_prefix="spu_">
@@ -290,8 +307,8 @@ type feed = {
   count: int;
   total_results <json name="totalResults">: int;
   ~movies <json name="movie">: movie list;
-  ~people <json name="person">: person list;
-  ~series <json name="tvseries">: series list;
+  ~people <json name="person">: search_person list;
+  ~series <json name="tvseries">: search_series list;
   ~news: search_news list;
   ~media: search_media list;
 }
