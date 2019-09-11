@@ -1,57 +1,74 @@
-open Lwt.Infix
+let sed () =
+  let open Unix in
+  let t = localtime (time ()) in
+  Printf.sprintf "%d%02d%02d" (t.tm_year+1900) (t.tm_mon+1) t.tm_mday
 
-(* Low-level API call *)
-let allocine service_method parameters =
-  let signed =
-    let sed =
-      let open Unix in
-      let t = localtime (time ()) in
-      Printf.sprintf "%d%02d%02d" (t.tm_year+1900) (t.tm_mon+1) t.tm_mday
+module type C = sig
+  val api_url : string
+  val partner_key : string
+  val private_key : string
+  val user_agent : string
+end
+
+exception HttpError of int
+
+module Make (CONFIG : C) (CLIENT : Cohttp_lwt.S.Client) = struct
+  let call service_method parameters =
+    let open Lwt.Infix in
+    let signed =
+      Uri.encoded_of_query @@
+        ("sed", [sed ()]) ::
+        ("partner", [CONFIG.partner_key]) ::
+        List.map (fun (a,b) -> (a, [b])) parameters
     in
-    let converted = List.map (fun (a,b) -> (a, [b])) parameters in
-    Uri.encoded_of_query @@
-      ("sed", [sed]) :: ("partner", [Net_config.partner_key]) :: converted
-  in
-  let signature =
-    (Net_config.private_key ^ signed) |> Sha1.string |>
-    Sha1.to_bin |> B64.encode
-  in
-  let uri =
-    Uri.of_string @@
-    Net_config.api_url ^ service_method ^ "?" ^ signed ^ "&sig=" ^ signature
-  in
-  let header = Cohttp.Header.init_with "User-Agent" Net_config.user_agent in
-  Cohttp_lwt_unix.Client.call ~headers:header `GET uri >>= fun (resp, body) ->
-  let status = Cohttp.Response.status resp in
-  match status with
-  | `OK ->
-    body |> Cohttp_lwt.Body.to_string >>= fun s ->
-    Lwt.return @@ Bytes.unsafe_of_string s
-  | _ -> raise (Lib.HttpError (Cohttp.Code.code_of_status status))
+    let signature =
+      CONFIG.private_key ^ signed |>
+      Digestif.SHA1.digest_string |>
+      Digestif.SHA1.to_raw_string |>
+      B64.encode
+    in
+    let headers = Cohttp.Header.init_with "User-Agent" CONFIG.user_agent in
+    CONFIG.api_url ^ service_method ^ "?" ^ signed ^ "&sig=" ^ signature |>
+    Uri.of_string |>
+    CLIENT.get ~headers >>= fun (resp, body) ->
+    match Cohttp.Response.status resp with
+    | `OK ->
+      Cohttp_lwt.Body.to_string body
+    | status ->
+      Lwt.fail (HttpError (Cohttp.Code.code_of_status status))
 
-let allocine = Lib.cache allocine
+  let call ?bypass service_method parameters =
+    let lifetime = Maki.(Lifetime.KeepFor (Time.days 5)) in
+    let args = Maki.(Arg.[
+      Hash.string @:: service_method;
+      Hash.(list @@ pair string string) @:: parameters;
+    ]) in
+    let returning = Maki.Codec.string in
+    Maki.call_pure ?bypass ~lifetime ~name:"allocine" ~args ~returning @@
+    fun () -> call service_method parameters
 
-let search query max_results =
-  let p = ["q", query; "count", string_of_int max_results] in
-  allocine "search" (("format", "json") :: p) >|=
-  Bytes.unsafe_to_string >|=
-  Atdgen_runtime.Util.Json.from_string Types_j.read_search >|= fun s ->
-  s.Types_t.feed
+  open Maki.E.Infix
 
-let movie id =
-  let p = [("code", string_of_int id); ("profile", "large")] in
-  allocine "movie" (("format", "json") :: p) >|=
-  Bytes.unsafe_to_string >|=
-  Atdgen_runtime.Util.Json.from_string Types_j.read_get_movie >|= fun m ->
-  m.Types_t.movie
+  let search query max_results =
+    let p = ["q", query; "count", string_of_int max_results] in
+    call "search" (("format", "json") :: p) >|=
+    Atdgen_runtime.Util.Json.from_string Types_j.read_search >|= fun s ->
+    s.Types_t.feed
 
-let person id =
-  let p = [("code", string_of_int id); ("profile", "large")] in
-  allocine "person" (("format", "json") :: p) >|=
-  Bytes.unsafe_to_string >|=
-  Atdgen_runtime.Util.Json.from_string Types_j.read_get_person >|= fun m ->
-  m.Types_t.person
+  let movie id =
+    let p = [("code", string_of_int id); ("profile", "large")] in
+    call "movie" (("format", "json") :: p) >|=
+    Atdgen_runtime.Util.Json.from_string Types_j.read_get_movie >|= fun m ->
+    m.Types_t.movie
 
+  let person id =
+    let p = [("code", string_of_int id); ("profile", "large")] in
+    call "person" (("format", "json") :: p) >|=
+    Atdgen_runtime.Util.Json.from_string Types_j.read_get_person >|= fun m ->
+    m.Types_t.person
+end
+
+(* FIXME? *)
 let clean_director s =
   let re = Re.(compile (seq [
     group (rep any);
