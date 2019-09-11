@@ -15,5 +15,5 @@
  (deps types.atd)
  (action (run atdgen -j %{deps})))
 (library
- (name allocine)
+ (public_name allocine)
  (libraries atdgen tyre calendar digestif cohttp-lwt yojson maki))
