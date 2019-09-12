@@ -1,6 +1,7 @@
 type atom <ocaml from="Atom"> = abstract
 
 type date = string wrap <ocaml module="Date">
+type idate = string wrap <ocaml module="Idate">
 
 type code_name = {
   code: int;
@@ -8,7 +9,7 @@ type code_name = {
 } <ocaml field_prefix="cn_">
 
 type release = {
-  date <json name="releaseDate">: date;
+  date <json name="releaseDate">: idate;
   ?country: atom option;
   ?state <json name="releaseState">: atom option; (* FIXME *)
   ?distributor: code_name option;
