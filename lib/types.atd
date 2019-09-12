@@ -54,6 +54,7 @@ type statistics = {
 type cast_member = {
   person: code_name;
   activity: activity;
+  ?role: string option;
   ?picture: picture option;
 }
 
