@@ -91,7 +91,7 @@ type source = {
 type writer = {
   code: string;
   name: string;
-  avatar: string;
+  ?avatar: string option;
 } <ocaml field_prefix="ava_">
 
 type datetime = string wrap <ocaml module="Datetime">
@@ -112,16 +112,16 @@ type binary = int wrap <ocaml module="Binary">
 
 type movie = {
   code: int;
-  ?movie_type <json name="movieType">: atom option;
+  movie_type <json name="movieType">: atom;
   original_title <json name="originalTitle">: string;
   ?title <json name="title">: string option;
-  ?keywords: string option;
+  ?keywords: string option; (* FIXME parse? *)
   production_year <json name="productionYear">: int;
   ?nationality: nationality option;
   ~genre: atom list;
   ?release: release option;
   ?duration <json name="runtime">: int option;
-  ?color: atom option; (* FIXME? *)
+  ?color: atom option;
   ~language: atom list;
   ?budget: string option;
   ?synopsis: string option;
@@ -130,8 +130,7 @@ type movie = {
   ~cast <json name="castMember">: cast_member list;
   ?certificate <json name="movieCertificate">: certificate option;
   ?poster: picture option;
-  (* ?trailer: picture option; *)
-  ?trailer_embed <json name="trailerEmbed">: string option;
+  ?trailer: picture option;
   ?has_vod <json name="hasVOD">: binary option;
   ?has_svod <json name="hasSVOD">: binary option;
   ?has_showtime <json name="hasShowtime">: binary option;
@@ -259,6 +258,17 @@ type media = {
 } <ocaml field_prefix="med_">
 
 
+type search_movie = {
+  code: int;
+  original_title <json name="originalTitle">: string;
+  ?title <json name="title">: string option;
+  ?production_year <json name="productionYear">: int option;
+  ?release: release option;
+  ?casting_short <json name="castingShort">: casting_short option;
+  ?poster: picture option;
+  ?statistics: statistics option;
+} <ocaml field_prefix="smo_">
+
 type search_person = {
   code: int;
   name: string;
@@ -306,7 +316,7 @@ type feed = {
   page: int;
   count: int;
   total_results <json name="totalResults">: int;
-  ~movies <json name="movie">: movie list;
+  ~movies <json name="movie">: search_movie list;
   ~people <json name="person">: search_person list;
   ~series <json name="tvseries">: search_series list;
   ~news: search_news list;

@@ -16,8 +16,10 @@ let () = Lwt_main.run (
       (List.length d.media) >>= fun () ->
     Lwt_io.printl "movies:\nID\tprod\ttitle" >>= fun () ->
     d.movies |> Lwt_list.iter_s @@ fun m ->
-    Lwt_io.printf "%d\t%d\t%s\n"
-      m.mov_code
-      m.mov_production_year
-      m.mov_original_title
+    Lwt_io.printf "%d\t%s\t%s\n"
+      m.smo_code
+      (match m.smo_production_year with
+      | None -> "?"
+      | Some y -> string_of_int y)
+      m.smo_original_title
 )
