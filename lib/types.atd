@@ -187,10 +187,12 @@ type festival_section = {
   entities: entities;
 } <ocaml field_prefix="sec_">
 
+type gender = int wrap <ocaml module="Gender">
+
 type person = {
   code: int;
   name: name;
-  gender: int wrap <ocaml module="Gender">;
+  ?gender: gender option;
   nationality: nationality;
   ~activities <json name="activity">: activity list;
   biography_short <json name="biographyShort">: string;
@@ -273,7 +275,7 @@ type search_movie = {
 type search_person = {
   code: int;
   name: string;
-  gender: int wrap <ocaml module="Gender">;
+  ?gender: gender option;
   nationality: nationality;
   ~activities <json name="activity">: activity list;
   link: link first;
