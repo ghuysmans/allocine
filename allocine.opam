@@ -17,4 +17,5 @@ depends: [
   "cohttp-lwt"
   "yojson"
   "maki"
+  "base64" {>= "3.0.0"}
 ]
