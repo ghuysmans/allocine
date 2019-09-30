@@ -36,7 +36,7 @@ module Make (C : CONFIG) (H : Cohttp_lwt.S.Client) = struct
         C.private_key ^ signed |>
         Digestif.SHA1.digest_string |>
         Digestif.SHA1.to_raw_string |>
-        B64.encode
+        Base64.encode_string
       in
       let headers = Cohttp.Header.init_with "User-Agent" C.user_agent in
       C.api_url ^ service_method ^ "?" ^ signed ^ "&sig=" ^ signature |>
