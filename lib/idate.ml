@@ -1,3 +1,5 @@
+(** Wrapper for incomplete dates *)
+
 type t = {
   year: int;
   month: int;
@@ -16,13 +18,7 @@ and m = {
 }
 *)
 
-(** [repe t n] matches [t] repeated exactly [n] times. *)
-let repe t n = Re.repn t n (Some n)
-
-(** [fp_int n] matches an [n]-digit positive integer. *)
-let fp_int n = Tyre.(
-  conv int_of_string (Printf.sprintf "%0*d" n) (regex (repe Re.digit n))
-)
+open Re_utils
 
 let fmt = Tyre.(
   start *> fp_int 4 <&> char '-' *> fp_int 2 <&>
