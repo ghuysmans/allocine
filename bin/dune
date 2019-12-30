@@ -1,3 +1,4 @@
-(executables
- (names search movie person)
- (libraries allocine cohttp-lwt-unix net_config))
+(executable
+ (public_name allo)
+ (libraries allocine cohttp-lwt-unix net_config lwt_ppx)
+ (preprocess (pps lwt_ppx)))
