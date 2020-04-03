@@ -1,4 +1,4 @@
 (executable
  (public_name allo)
- (libraries allocine cohttp-lwt-unix net_config lwt_ppx)
+ (libraries allocine cohttp-lwt-unix net_config)
  (preprocess (pps lwt_ppx)))
