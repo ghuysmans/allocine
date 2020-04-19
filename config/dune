@@ -1,2 +1,3 @@
 (library
- (name net_config))
+ (name net_config)
+ (libraries allocine))

@@ -1,0 +1,1 @@
+include Allocine.Api.CONFIG
