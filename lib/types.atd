@@ -80,7 +80,6 @@ type award = {
   code: int;
   parent_festival <json name="parentFestival">: code_name;
   parent_edition <json name="parentEdition">: code_name;
-  typ <json name="awardType">: atom;
   name: string;
 } <ocaml field_prefix="awa_">
 
@@ -118,7 +117,7 @@ type movie = {
   original_title <json name="originalTitle">: string;
   ?title <json name="title">: string option;
   ?keywords: string option; (* FIXME parse? *)
-  production_year <json name="productionYear">: int;
+  ?production_year <json name="productionYear">: int option;
   ?nationality: nationality option;
   ~genre: atom list;
   ?release: release option;
@@ -229,7 +228,7 @@ type news = {
   code: int;
   publication: publication;
   title: string;
-  picture: picture;
+  ?picture: picture option;
   category <json name="category">: category list;
 } <ocaml field_prefix="new_">
 
@@ -255,7 +254,7 @@ type media = {
   ?rcode: int option;
   typ <json name="type">: typ;
   title: string;
-  thumbnail: picture;
+  ?thumbnail: picture option;
   ?width: int option;
   ?height: int option;
   ~link <ocaml default="None">: link first;
@@ -302,7 +301,7 @@ type search_news = {
   title: string;
   headline: string;
   publication: search_publication;
-  picture: picture;
+  ?picture: picture option;
   category <json name="category">: category list;
 } <ocaml field_prefix="snw_">
 
