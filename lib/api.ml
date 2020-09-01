@@ -33,7 +33,7 @@ module Make (C : CONFIG) (H : Cohttp_lwt.S.Client) = struct
           List.map (fun (a,b) -> (a, [b])) parameters
       in
       let signature =
-        C.private_key ^ signed |>
+        service_method ^ signed ^ C.private_key |>
         Digestif.SHA1.digest_string |>
         Digestif.SHA1.to_raw_string |>
         Base64.encode_string
