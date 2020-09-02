@@ -9,6 +9,9 @@ end
 exception HttpError of int
 
 module Make (C : CONFIG) (H : Cohttp_lwt.S.Client) = struct
+  (** [last_response] contains the last successful HTTP response. *)
+  let last_response = ref ""
+
   (** [call service params] calls a [service] with the given [params],
       caching the answer. *)
   let call ?bypass service_method parameters =
@@ -44,7 +47,9 @@ module Make (C : CONFIG) (H : Cohttp_lwt.S.Client) = struct
       H.get ~headers >>= fun (resp, body) ->
       match Cohttp.Response.status resp with
       | `OK ->
-        Cohttp_lwt.Body.to_string body
+        Cohttp_lwt.Body.to_string body >>= fun b ->
+        last_response := b;
+        Lwt.return b
       | status ->
         Lwt.fail (HttpError (Cohttp.Code.code_of_status status))
 

@@ -33,32 +33,64 @@ let print_series (t : Types_t.search_series) =
   | Some e -> Printf.printf "%d)\n" e);
   print_casting "Série" t.sse_casting_short
 
+let print_pretty fn =
+  let ch = open_out fn in
+  let t = Yojson.Safe.from_string (!M.last_response) in
+  Yojson.Safe.pretty_to_channel ch t;
+  close_out ch
+
 let smoke_test t code =
+  (* FIXME return ok *)
   try%lwt
     let%lwt () = Lwt_unix.sleep (Random.float 3.) in
     match t with
     | `Movie -> M.movie code >|= ignore
   with Atdgen_runtime.Oj_run.Error e ->
-    let s =
+    let fn =
       match t with
-      | `Movie -> "movie"
+      | `Movie -> "m_" ^ string_of_int code ^ ".json"
     in
-    Lwt_io.eprintf "M.%s %d: %s\n" s code e
+    Lwt_io.eprintf "%s: %s\n" fn e >>= fun () ->
+    print_pretty fn;
+    Lwt.return ()
 
 
-let () = Lwt_main.run (
-  try%lwt
-    match%lwt M.search Sys.argv.(1) 10 with
-    | Error e -> Lwt_io.eprintl e
-    | Ok {movies; series; _} ->
-      List.iter print_movie movies;
-      List.iter print_series series;
-      Printf.printf "%!";
-      let%lwt () =
-        List.map (fun {Types_t.smo_code; _} -> smo_code) movies |>
-        Lwt_list.iter_s (smoke_test `Movie)
-      in
-      Lwt.return ()
-  with Atdgen_runtime.Oj_run.Error e ->
-    Lwt_io.eprintf "M.search %S: %s\n" Sys.argv.(1) e
+let () = exit @@ Lwt_main.run (
+  match Sys.argv with
+  | [| _; "test" |] ->
+    Lwt.return 0 (* TODO extend smoke_test and get a bunch of examples *)
+  | [| _; s |] ->
+    (try%lwt
+      match%lwt M.search s 10 with
+      | Error e ->
+        Lwt_io.eprintl e >>= fun () ->
+        Lwt.return 1
+      | Ok {movies; series; _} ->
+        List.iter print_movie movies;
+        List.iter print_series series;
+        Printf.printf "%!";
+        let%lwt () =
+          List.map (fun {Types_t.smo_code; _} -> smo_code) movies |>
+          Lwt_list.iter_s (smoke_test `Movie) (* FIXME combine *)
+        in
+        Lwt.return 0 (* FIXME *)
+    with Atdgen_runtime.Oj_run.Error e ->
+      Lwt_io.eprintl e >>= fun () ->
+      print_pretty ("s_" ^ s ^ ".json");
+      Lwt.return 1)
+  | [| _; typ; fn |] ->
+    let ff = Atdgen_runtime.Util.Json.from_file in
+    (try
+      match typ with
+      | "movie" -> ignore (ff Types_j.read_get_movie fn); Lwt.return 0
+      | "search" -> ignore (ff Types_j.read_search fn); Lwt.return 0
+      | _ ->
+        Lwt_io.eprintf "unknown type %s\n" typ >>= fun () ->
+        Lwt.return 1
+    with Atdgen_runtime.Oj_run.Error e ->
+      Lwt_io.eprintf "%s\n" e >>= fun () ->
+      Lwt.return 1)
+  | _ ->
+    Printf.eprintf "usage: %s QUERY | (movie|search) INPUT\n" Sys.argv.(0);
+    Lwt.return 1
 )
