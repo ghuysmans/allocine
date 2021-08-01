@@ -1,6 +1,9 @@
 exception HttpError of int
 
-module Make (H : Allocine_cohttp_proxy.S) = struct
+module Make (H : sig
+  include Cohttp_lwt.S.Client
+  type allocine_auth [@@warning "-34"]
+end) = struct
   (** [last_response] contains the last successful HTTP response. *)
   let last_response = ref ""
 

@@ -6,9 +6,7 @@ module type CONFIG = sig
   val user_agent : string
 end
 
-module type S = sig
+module Make : functor (C : CONFIG) (H : Cohttp_lwt.S.Client) -> sig
   include Cohttp_lwt.S.Client
   type allocine_auth
 end
-
-module Make : functor (C : CONFIG) (H : Cohttp_lwt.S.Client) -> S

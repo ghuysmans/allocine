@@ -16,4 +16,4 @@
  (action (run atdgen -j %{deps})))
 (library
  (public_name allocine)
- (libraries allocine-cohttp-proxy atdgen tyre calendar cohttp-lwt yojson maki))
+ (libraries atdgen tyre calendar cohttp-lwt yojson maki))

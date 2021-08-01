@@ -5,11 +5,6 @@ module type CONFIG = sig
   val user_agent : string
 end
 
-module type S = sig
-  include Cohttp_lwt.S.Client
-  type allocine_auth
-end
-
 module Make (C : CONFIG) (H : Cohttp_lwt.S.Client) = struct
   type ctx = H.ctx
   let default_ctx = H.default_ctx
