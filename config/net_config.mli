@@ -1,1 +1,1 @@
-include Allocine.Api.CONFIG
+include Allocine_cohttp_proxy.CONFIG

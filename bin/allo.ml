@@ -1,5 +1,5 @@
 open Allocine
-module M = Api.Make (Net_config) (Cohttp_lwt_unix.Client)
+module M = Api.Make (Allocine_cohttp_proxy.Make (Net_config) (Cohttp_lwt_unix.Client))
 open Lwt.Infix
 
 let print_casting t = function

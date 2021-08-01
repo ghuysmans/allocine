@@ -1,0 +1,4 @@
+(library
+ (name allocine_cohttp_proxy)
+ (public_name allocine-cohttp-proxy)
+ (libraries cohttp-lwt digestif base64 unix))

@@ -1,14 +1,6 @@
-(** API configuration: keys, etc. *)
-module type CONFIG = sig
-  val api_url : string
-  val partner_key : string
-  val private_key : string
-  val user_agent : string
-end
-
 exception HttpError of int
 
-module Make (C : CONFIG) (H : Cohttp_lwt.S.Client) = struct
+module Make (H : Allocine_cohttp_proxy.S) = struct
   (** [last_response] contains the last successful HTTP response. *)
   let last_response = ref ""
 
@@ -23,28 +15,14 @@ module Make (C : CONFIG) (H : Cohttp_lwt.S.Client) = struct
     let returning = Maki.Codec.string in
     Maki.call_pure ?bypass ~lifetime ~name:"allocine" ~args ~returning @@
     fun () ->
+      let uri =
+        let open Uri in
+        parameters |>
+        (* FIXME use the real base URI? *)
+        with_query' (of_string ("http://allo/" ^ service_method))
+      in
       let open Lwt.Infix in
-      let signed =
-        Uri.encoded_of_query @@
-          ("sed", [
-            let open Unix in
-            let t = localtime (time ()) in
-            Printf.sprintf "%d%02d%02d"
-              (t.tm_year+1900) (t.tm_mon+1) t.tm_mday
-          ]) ::
-          ("partner", [C.partner_key]) ::
-          List.map (fun (a,b) -> (a, [b])) parameters
-      in
-      let signature =
-        service_method ^ signed ^ C.private_key |>
-        Digestif.SHA1.digest_string |>
-        Digestif.SHA1.to_raw_string |>
-        Base64.encode_string
-      in
-      let headers = Cohttp.Header.init_with "User-Agent" C.user_agent in
-      C.api_url ^ service_method ^ "?" ^ signed ^ "&sig=" ^ signature |>
-      Uri.of_string |>
-      H.get ~headers >>= fun (resp, body) ->
+      H.get uri >>= fun (resp, body) ->
       match Cohttp.Response.status resp with
       | `OK ->
         Cohttp_lwt.Body.to_string body >>= fun b ->
